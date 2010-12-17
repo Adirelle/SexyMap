@@ -7,28 +7,46 @@ local db
 local updateFrame = CreateFrame("Frame")
 local updateRotations
 
-local onShow = function(self)
-	self.rotSettings = GetCVar("rotateMinimap")
-	SetCVar("rotateMinimap", "1")
-	if db.useGatherMate and GatherMate2 then
-		GatherMate2:GetModule("Display"):ReparentMinimapPins(HudMapCluster)
-		GatherMate2:GetModule("Display"):ChangedVars(nil, "ROTATE_MINIMAP", "1")
+local changeMinimap = function(newMinimapParent, rotate)
+	SetCVar("rotateMinimap", rotate)
+	if db.useGatherMate then
+		if GatherMate then
+			GatherMate:GetModule("Display"):ReparentMinimapPins(newMinimapParent)
+			GatherMate:GetModule("Display"):ChangedVars(nil, "ROTATE_MINIMAP", rotate)
+		end
+		if GatherMate2 then
+			GatherMate2:GetModule("Display"):ReparentMinimapPins(newMinimapParent)
+			GatherMate2:GetModule("Display"):ChangedVars(nil, "ROTATE_MINIMAP",rotate)
+		end
 	end
 	
 	if db.useQuestHelper and QuestHelper and QuestHelper.SetMinimapObject then
-		QuestHelper:SetMinimapObject(HudMapCluster)
+		QuestHelper:SetMinimapObject(newMinimapParent)
 	end
 	
 	if db.useRoutes and Routes and Routes.ReparentMinimap then
-		Routes:ReparentMinimap(HudMapCluster)
-		Routes:CVAR_UPDATE(nil, "ROTATE_MINIMAP", "1")
+		Routes:ReparentMinimap(newMinimapParent)
+		Routes:CVAR_UPDATE(nil, "ROTATE_MINIMAP", rotate)
 	end
 	
 	if TomTom and TomTom.ReparentMinimap then
-		TomTom:ReparentMinimap(HudMapCluster)
-		local Astrolabe = DongleStub("Astrolabe-1.0") -- Astrolabe is bundled with TomTom (it's not packaged with SexyMap)
-		Astrolabe.processingFrame:SetParent(HudMapCluster)
+		TomTom:ReparentMinimap(newMinimapParent)
 	end
+	
+	local ok, Astrolabe04 = pcall(DongleStub, "Astrolabe-0.4")
+	if ok and Astrolabe04 then
+		Astrolabe04.processingFrame:SetParent(newMinimapParent)
+	end
+	
+	local ok, Astrolabe10 = pcall(DongleStub, "Astrolabe-1.0")
+	if ok and Astrolabe10 then
+		Astrolabe10.processingFrame:SetParent(newMinimapParent)
+	end	
+end
+
+local onShow = function(self)
+	self.rotSettings = GetCVar("rotateMinimap")
+	changeMinimap(HudMapCluster, "1")
 	
 	if _G.GetMinimapShape and not mod:IsHooked("GetMinimapShape") then
 		mod:Hook("GetMinimapShape")
@@ -39,26 +57,7 @@ local onShow = function(self)
 end
 
 local onHide = function(self, force)
-	SetCVar("rotateMinimap", self.rotSettings)
-	if (db.useGatherMate or force) and GatherMate2 then
-		GatherMate2:GetModule("Display"):ReparentMinimapPins(Minimap)
-		GatherMate2:GetModule("Display"):ChangedVars(nil, "ROTATE_MINIMAP", self.rotSettings)
-	end
-	
-	if db.useQuestHelper and QuestHelper and QuestHelper.SetMinimapObject then
-		QuestHelper:SetMinimapObject(Minimap)
-	end
-	
-	if (db.useRoutes or force) and Routes and Routes.ReparentMinimap then
-		Routes:ReparentMinimap(Minimap)
-		Routes:CVAR_UPDATE(nil, "ROTATE_MINIMAP", self.rotSettings)
-	end
-	
-	if TomTom and TomTom.ReparentMinimap then
-		TomTom:ReparentMinimap(Minimap)
-		local Astrolabe = DongleStub("Astrolabe-1.0") -- Astrolabe is bundled with TomTom (it's not packaged with SexyMap)
-		Astrolabe.processingFrame:SetParent(Minimap)		
-	end
+	changeMinimap(Minimap, self.rotSettings)
 	
 	if _G.GetMinimapShape and mod:IsHooked("GetMinimapShape") then
 		mod:Unhook("GetMinimapShape")
