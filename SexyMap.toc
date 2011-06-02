@@ -11,6 +11,7 @@
 #@no-lib-strip@
 embeds.xml
 #@end-no-lib-strip@
+Libs\Astrolabe\Load.xml
 
 # Libraries not on WoWAce/Curse (will be included in no-lib packages)
 # Astrolabe is bundled with TomTom (it's not packaged with SexyMap)
