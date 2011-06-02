@@ -42,7 +42,7 @@ Note:
 -- DO NOT MAKE CHANGES TO THIS LIBRARY WITHOUT FIRST CHANGING THE LIBRARY_VERSION_MAJOR
 -- STRING (to something unique) OR ELSE YOU MAY BREAK OTHER ADDONS THAT USE THIS LIBRARY!!!
 local LIBRARY_VERSION_MAJOR = "Astrolabe-1.0"
-local LIBRARY_VERSION_MINOR = tonumber(string.match("$Revision: 125 $", "(%d+)") or 1)
+local LIBRARY_VERSION_MINOR = tonumber(10000 + string.match("$Revision: 125 $", "(%d+)") or 1)
 
 if not DongleStub then error(LIBRARY_VERSION_MAJOR .. " requires DongleStub.") end
 if not DongleStub:IsNewerVersion(LIBRARY_VERSION_MAJOR, LIBRARY_VERSION_MINOR) then return end
@@ -69,6 +69,8 @@ local configConstants = {
 -- how many icons are updated each frame
 Astrolabe.MinimapUpdateMultiplier = 1;
 
+-- this can be changed by Astrolable:ReparentMinimap(frame)
+Astrolabe.Minimap = Minimap
 
 --------------------------------------------------------------------------------------------------------------
 -- Working Tables
@@ -540,7 +542,7 @@ function Astrolabe:PlaceIconOnMinimap( icon, mapID, mapFloor, xPos, yPos )
 	minimapShape = GetMinimapShape and ValidMinimapShapes[GetMinimapShape()];
 
 	-- place the icon on the Minimap and :Show() it
-	local map = Minimap
+	local map = self.Minimap
 	placeIconOnMinimap(map, map:GetZoom(), map:GetWidth(), map:GetHeight(), icon, dist, xDist, yDist);
 	icon:Show()
 
@@ -606,7 +608,7 @@ do
 
 			local M, F, x, y = self:GetCurrentPlayerPosition();
 			if ( M and M >= 0 ) then
-				local Minimap = Minimap;
+				local Minimap = self.Minimap;
 				local lastPosition = self.LastPlayerPosition;
 				local lM, lF, lx, ly = unpack(lastPosition);
 
@@ -649,6 +651,7 @@ do
 				else
 					local dist, xDelta, yDelta = self:ComputeDistance(lM, lF, lx, ly, M, F, x, y);
 					if ( dist ) then
+						local Minimap = self.Minimap;
 						local currentZoom = Minimap:GetZoom();
 						lastZoom = currentZoom;
 						local mapWidth = Minimap:GetWidth();
@@ -746,9 +749,9 @@ do
 				-- check Minimap Shape
 				minimapShape = GetMinimapShape and ValidMinimapShapes[GetMinimapShape()];
 
+				local Minimap = self.Minimap;
 				local currentZoom = Minimap:GetZoom();
 				lastZoom = currentZoom;
-				local Minimap = Minimap;
 				local mapWidth = Minimap:GetWidth();
 				local mapHeight = Minimap:GetHeight();
 				local count = 0
@@ -854,6 +857,18 @@ function Astrolabe:Register_OnEdgeChanged_Callback( func, ident )
 	self.IconsOnEdge_GroupChangeCallbacks[func] = ident;
 end
 
+function Astrolabe:ReparentMinimap(frame)
+	argcheck(frame, 2, "table")
+	assert(3, type(frame.GetZoom) == "function", "Astrolabe:ReparentMinimap(frame): frame.GetZoom should be a function")
+	assert(3, type(frame.SetZoom) == "function", "Astrolabe:ReparentMinimap(frame): frame.SetZoom should be a function")
+	assert(3, type(frame.GetWidth) == "function", "Astrolabe:ReparentMinimap(frame): frame.GetWidth should be a function")
+	assert(3, type(frame.GetHeight) == "function", "Astrolabe:ReparentMinimap(frame): frame.GetHeight should be a function")
+	self.processingFrame:Hide();
+	self.Minimap = frame;
+	self.processingFrame:SetParent(frame);
+	self.processingFrame:Show();
+end
+
 --*****************************************************************************
 -- INTERNAL USE ONLY PLEASE!!!
 -- Calling this function at the wrong time can cause errors
@@ -907,7 +922,7 @@ end
 function Astrolabe:OnEvent( frame, event )
 	if ( event == "MINIMAP_UPDATE_ZOOM" ) then
 		-- update minimap zoom scale
-		local Minimap = Minimap;
+		local Minimap = self.Minimap;
 		local curZoom = Minimap:GetZoom();
 		if ( GetCVar("minimapZoom") == GetCVar("minimapInsideZoom") ) then
 			if ( curZoom < 2 ) then

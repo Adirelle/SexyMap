@@ -39,8 +39,8 @@ local changeMinimap = function(newMinimapParent, rotate)
 	end
 	
 	local ok, Astrolabe10 = pcall(DongleStub, "Astrolabe-1.0")
-	if ok and Astrolabe10 then
-		Astrolabe10.processingFrame:SetParent(newMinimapParent)
+	if ok and Astrolabe10 and Astrolabe10.ReparentMinimap then
+		Astrolabe10:ReparentMinimap(newMinimapParent)
 	end	
 end
 
